@@ -28,8 +28,9 @@
 - **语言**：Python 3
 - **定时任务**：系统 Crontab（每日7:00）
 - **数据来源**：RSS订阅源、GitHub API、HuggingFace API
+- **自动翻译**：Google Translate API
 - **自动部署**：Git 推送到 GitHub
 
 ---
 
-*自动生成于 2026年03月19日 21:32*
+*自动生成于 2026年03月19日 21:58*

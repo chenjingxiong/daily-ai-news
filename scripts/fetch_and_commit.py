@@ -22,6 +22,9 @@ LOG_FILE = PROJECT_DIR / "fetch_log.txt"
 # 可选：设置 NewsAPI Key（免费获取：https://newsapi.org/）
 NEWS_API_KEY = os.getenv("NEWS_API_KEY", "")
 
+# 翻译缓存
+TRANSLATION_CACHE = {}
+
 def run_command(cmd, check=True):
     """执行shell命令"""
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
@@ -38,14 +41,69 @@ def log(message):
 def clean_html(html):
     """清理HTML标签"""
     import html
-    # 移除HTML标签
     text = re.sub(r'<[^>]+>', '', html)
-    # 解码HTML实体
     text = html.unescape(text)
     return text.strip()
 
+def translate_to_chinese(text):
+    """将英文翻译成中文（带缓存）"""
+    if not text or not text.strip():
+        return text
+
+    # 检查是否主要是中文
+    chinese_chars = len([c for c in text if '\u4e00' <= c <= '\u9fff'])
+    if chinese_chars > len(text) * 0.3:
+        return text  # 已经是中文，不需要翻译
+
+    # 检查缓存
+    if text in TRANSLATION_CACHE:
+        return TRANSLATION_CACHE[text]
+
+    try:
+        from deep_translator import GoogleTranslator
+
+        # 分段翻译（每段不超过5000字符）
+        max_length = 4000
+        if len(text) <= max_length:
+            translated = GoogleTranslator(source='auto', target='zh-CN').translate(text)
+        else:
+            # 长文本分段翻译
+            translated = ""
+            segments = []
+            current = ""
+
+            # 按句子分段
+            sentences = re.split(r'([.!?。！？\n])', text)
+            for i in range(0, len(sentences), 2):
+                if i + 1 < len(sentences):
+                    segment = sentences[i] + sentences[i + 1]
+                else:
+                    segment = sentences[i]
+
+                if len(current) + len(segment) > max_length and current:
+                    segments.append(current)
+                    current = segment
+                else:
+                    current += segment
+
+            if current:
+                segments.append(current)
+
+            # 翻译每一段
+            for segment in segments:
+                if segment.strip():
+                    translated += GoogleTranslator(source='auto', target='zh-CN').translate(segment)
+
+        # 缓存结果
+        TRANSLATION_CACHE[text] = translated
+        return translated
+
+    except Exception as e:
+        log(f"翻译错误: {str(e)}")
+        return text  # 翻译失败返回原文
+
 def fetch_from_rss():
-    """从中文和英文RSS源获取AI新闻"""
+    """从RSS源获取AI新闻"""
     news_items = {
         'headlines': [],
         'model_releases': [],
@@ -54,24 +112,17 @@ def fetch_from_rss():
         'products': []
     }
 
-    # 中文RSS源
-    cn_feeds = [
-        "https://www.36kr.com/feed/search/keyword/人工智能",
-        "https://www.ifanr.com/rss",
-    ]
-
-    # 英文RSS源（主要科技媒体）
-    en_feeds = [
+    # RSS源列表
+    feeds = [
         "https://techcrunch.com/category/artificial-intelligence/feed/",
         "https://www.artificialintelligence-news.com/feed/",
+        "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml",
     ]
-
-    all_feeds = cn_feeds + en_feeds
 
     try:
         import feedparser
 
-        for feed_url in all_feeds:
+        for feed_url in feeds:
             try:
                 print(f"  📡 获取: {feed_url[:50]}...")
                 feed = feedparser.parse(feed_url)
@@ -84,37 +135,44 @@ def fetch_from_rss():
 
                     # 清理HTML
                     description = clean_html(description)
-                    description = description[:200] + '...' if len(description) > 200 else description
+                    description = description[:300] + '...' if len(description) > 300 else description
 
-                    # 判断来源类型
-                    is_cn = any(domain in feed_url for domain in ['36kr', 'ifanr', 'csdn', 'zhihu'])
-                    source = entry.get('title', '') if is_cn else 'RSS'
+                    # 翻译标题和描述
+                    title_cn = translate_to_chinese(title)
+                    description_cn = translate_to_chinese(description)
+
+                    # 确定来源
+                    if 'techcrunch' in feed_url:
+                        source = 'TechCrunch'
+                    elif 'artificialintelligence-news' in feed_url:
+                        source = 'AI News'
+                    elif 'verge' in feed_url:
+                        source = 'The Verge'
+                    else:
+                        source = 'RSS'
 
                     # 判断新闻类别
                     title_lower = title.lower()
                     desc_lower = description.lower()
 
                     item = {
-                        'title': title,
+                        'title': title_cn,
+                        'title_original': title,  # 保留原文
                         'url': url,
-                        'description': description,
+                        'description': description_cn,
                         'published': published,
                         'source': source
                     }
 
-                    # 模型发布
-                    if any(word in title_lower for word in ['gpt', 'claude', 'gemini', 'llama', '模型发布', 'model release', 'openai']):
+                    # 分类
+                    if any(word in title_lower for word in ['gpt', 'claude', 'gemini', 'llama', 'model release', 'openai', '模型']):
                         news_items['model_releases'].append(item)
-                    # 融资
-                    elif any(word in title_lower for word in ['融资', 'funding', '投资', 'investment', 'ipo', 'unicorn']):
+                    elif any(word in title_lower for word in ['funding', 'investment', 'ipo', 'raises', '融资', '投资']):
                         news_items['funding'].append(item)
-                    # 政策监管
-                    elif any(word in title_lower for word in ['监管', '政策', 'regulation', 'policy', 'law', '法规']):
+                    elif any(word in title_lower for word in ['regulation', 'policy', 'law', '监管', '政策']):
                         news_items['policy'].append(item)
-                    # 产品发布
-                    elif any(word in title_lower for word in ['发布', 'launch', 'release', '推出', '产品', 'product']):
+                    elif any(word in title_lower for word in ['launch', 'release', 'announces', '发布', '推出']):
                         news_items['products'].append(item)
-                    # 其他头条
                     else:
                         news_items['headlines'].append(item)
 
@@ -127,7 +185,7 @@ def fetch_from_rss():
     return news_items
 
 def fetch_from_github_trending():
-    """获取GitHub热门AI项目"""
+    """获取GitHub热门AI项目并翻译描述"""
     try:
         url = "https://api.github.com/search/repositories"
         params = {
@@ -145,7 +203,7 @@ def fetch_from_github_trending():
                     'name': repo['name'],
                     'url': repo['html_url'],
                     'stars': repo['stargazers_count'],
-                    'description': repo.get('description', '暂无描述')
+                    'description': translate_to_chinese(repo.get('description', '暂无描述'))
                 }
                 for repo in repos
             ]
@@ -155,9 +213,8 @@ def fetch_from_github_trending():
     return []
 
 def fetch_from_huggingface():
-    """获取HuggingFace热门模型"""
+    """获取HuggingFace热门模型并翻译描述"""
     try:
-        # HuggingFace API - 获取热门模型
         url = "https://huggingface.co/api/models"
         params = {
             'limit': 6,
@@ -174,7 +231,7 @@ def fetch_from_huggingface():
                     'url': f"https://huggingface.co/{model.get('modelId', '')}",
                     'downloads': model.get('downloads', 0),
                     'likes': model.get('likes', 0),
-                    'description': model.get('description', '')[:100]
+                    'description': translate_to_chinese(model.get('description', ''))
                 }
                 for model in models
             ]
@@ -200,7 +257,7 @@ def fetch_ai_news():
     }
 
     # 获取RSS新闻
-    print("📡 正在获取RSS订阅源...")
+    print("📡 正在获取RSS订阅源（含翻译）...")
     rss_news = fetch_from_rss()
     all_news['headlines'].extend(rss_news['headlines'][:6])
     all_news['model_releases'].extend(rss_news['model_releases'][:5])
@@ -209,11 +266,11 @@ def fetch_ai_news():
     all_news['products'].extend(rss_news['products'][:5])
 
     # 获取GitHub热门项目
-    print("📡 正在获取GitHub热门AI项目...")
+    print("📡 正在获取GitHub热门AI项目（含翻译）...")
     all_news['github_trending'] = fetch_from_github_trending()
 
     # 获取HuggingFace热门模型
-    print("📡 正在获取HuggingFace热门模型...")
+    print("📡 正在获取HuggingFace热门模型（含翻译）...")
     all_news['huggingface'] = fetch_from_huggingface()
 
     # 统计
@@ -320,7 +377,9 @@ def generate_content(news_data):
     # 页脚
     content += """---
 
-**数据来源**：TechCrunch、AI-News、GitHub、HuggingFace
+**数据来源**：TechCrunch、AI-News、The Verge、GitHub、HuggingFace
+
+**翻译服务**：Google Translate（自动翻译，如有错误请以原文为准）
 
 *本文件由 [daily-ai-news](https://github.com/chenjingxiong/daily-ai-news) 自动生成*
 """
@@ -378,6 +437,7 @@ def update_readme():
 - **语言**：Python 3
 - **定时任务**：系统 Crontab（每日7:00）
 - **数据来源**：RSS订阅源、GitHub API、HuggingFace API
+- **自动翻译**：Google Translate API
 - **自动部署**：Git 推送到 GitHub
 
 ---
@@ -424,7 +484,7 @@ def main():
     log("=== 开始获取AI资讯 ===")
 
     print("\n" + "="*60)
-    print("🤖 AI 每日资讯获取器")
+    print("🤖 AI 每日资讯获取器（含自动翻译）")
     print("="*60)
 
     try:

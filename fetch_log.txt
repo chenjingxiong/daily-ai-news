@@ -3,3 +3,7 @@
 2026-03-19 21:31:20 - === 开始获取AI资讯 ===
 2026-03-19 21:31:59 - RSS获取错误 https://techcrunch.com/category/artificial-intelligence/feed/: expected string or bytes-like object, got 'module'
 2026-03-19 21:32:01 - RSS获取错误 https://www.artificialintelligence-news.com/feed/: expected string or bytes-like object, got 'module'
+2026-03-19 21:32:04 - === AI资讯获取完成 ===
+2026-03-19 21:57:57 - === 开始获取AI资讯 ===
+2026-03-19 21:57:57 - RSS获取错误 https://techcrunch.com/category/artificial-intelligence/feed/: expected string or bytes-like object, got 'module'
+2026-03-19 21:57:59 - RSS获取错误 https://www.artificialintelligence-news.com/feed/: expected string or bytes-like object, got 'module'
