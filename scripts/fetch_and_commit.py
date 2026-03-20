@@ -1002,6 +1002,69 @@ def update_readme():
         f.write(readme_content)
     print(f"✅ README已更新")
 
+def update_archives_index():
+    """更新归档索引文件"""
+    archives = sorted(ARCHIVES_DIR.glob("ai-news-*.md"), reverse=True)
+
+    index_content = f"""# 📚 AI 每日资讯归档索引
+
+> 自动更新时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## 📅 所有资讯（共 {len(archives)} 篇）
+
+"""
+
+    for archive in archives:
+        archive_date = archive.stem.replace('ai-news-', '')
+        try:
+            formatted_date = datetime.strptime(archive_date, '%Y-%m-%d').strftime('%Y年%m月%d日')
+            # 读取文件统计各分类数量
+            with open(archive, 'r', encoding='utf-8') as f:
+                content = f.read()
+                # 统计各分类的条目数（通过计算项目链接数量）
+                headlines = content.count('## 🔥 今日头条')
+                models = content.count('| 来源 |')
+                funding = content.count('## 💰 融资与投资')
+                products = content.count('## 📦 产品发布')
+                policy = content.count('## 🏛️ 政策与监管')
+
+            stats_parts = []
+            if headlines > 0:
+                stats_parts.append(f"头条{headlines}条")
+            if models > 0:
+                stats_parts.append(f"模型{models}个")
+            if funding > 0:
+                stats_parts.append(f"融资{funding}条")
+            if products > 0:
+                stats_parts.append(f"产品{products}条")
+            if policy > 0:
+                stats_parts.append(f"政策{policy}条")
+
+            stats_str = " | ".join(stats_parts) if stats_parts else ""
+            index_content += f"- [{formatted_date}](./{archive.name})"
+            if stats_str:
+                index_content += f" - {stats_str}"
+            index_content += "\n"
+        except Exception as e:
+            index_content += f"- [{archive_date}](./{archive.name})\n"
+
+    index_content += f"""
+
+## 📊 统计信息
+
+- **总资讯数**: {len(archives)} 篇
+- **最新更新**: {archives[0].stem.replace('ai-news-', '') if archives else '无'}
+- **最早更新**: {archives[-1].stem.replace('ai-news-', '') if archives else '无'}
+
+---
+
+*本文件由 [daily-ai-news](https://github.com/chenjingxiong/daily-ai-news) 自动生成*
+"""
+
+    with open(ARCHIVES_DIR / "index.md", 'w', encoding='utf-8') as f:
+        f.write(index_content)
+    print(f"✅ 归档索引已更新：{ARCHIVES_DIR / 'index.md'}")
+
 def commit_to_github():
     """提交更改到GitHub"""
     os.chdir(PROJECT_DIR)
@@ -1046,6 +1109,9 @@ def main():
 
         # 更新README
         update_readme()
+
+        # 更新归档索引
+        update_archives_index()
 
         # 提交到GitHub
         commit_to_github()
