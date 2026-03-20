@@ -284,12 +284,28 @@ def fetch_verge_ai():
     return news_items
 
 def fetch_rss_feeds():
-    """获取RSS订阅源"""
+    """获取RSS订阅源 - 扩展版"""
     news_items = []
+
+    # 英文AI媒体RSS源
     rss_sources = [
+        # AI专业媒体
         ("https://www.artificialintelligence-news.com/feed/", "AI-News"),
         ("https://www.aitimes.com/feed/", "AI Times"),
         ("https://syncedreview.com/feed", "Synced"),
+
+        # 科技媒体AI版块
+        ("https://feeds.arstechnica.com/arstechnica/technology-lab", "Ars Technica"),
+        ("https://www.wired.com/feed/rss/category/ai/index.html", "Wired AI"),
+        ("https://www.technologyreview.com/feed/", "MIT Tech Review"),
+
+        # 数据科学媒体
+        ("https://towardsdatascience.com/feed", "Towards Data Science"),
+        ("https://www.kdnuggets.com/feed", "KDnuggets"),
+
+        # 开发者媒体
+        ("https://hackaday.com/blog/feed/", "Hackaday"),
+        ("https://www.infoq.com/feed", "InfoQ"),
     ]
 
     for feed_url, source_name in rss_sources:
@@ -396,6 +412,116 @@ def fetch_papers_with_code():
         log(f"Papers with Code获取错误: {str(e)}")
     return []
 
+def fetch_reddit_ai():
+    """获取Reddit r/MachineLearning 热门帖子"""
+    news_items = []
+    try:
+        url = "https://www.reddit.com/r/MachineLearning/hot.json?limit=8"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+
+        response = requests.get(url, headers=headers, timeout=30)
+        if response.status_code == 200:
+            data = response.json()
+            posts = data.get('data', {}).get('children', [])
+
+            for post in posts[:6]:
+                post_data = post.get('data', {})
+                title = post_data.get('title', '')
+                url = post_data.get('url', '')
+                permalink = 'https://reddit.com' + post_data.get('permalink', '')
+                selftext = post_data.get('selftext', '')
+
+                # 翻译标题
+                title_cn = translate_to_chinese(title)
+
+                # 如果有正文，使用正文作为描述
+                if selftext:
+                    description = translate_to_chinese(selftext[:100])
+                else:
+                    description = f"查看讨论: {url[:50]}..."
+
+                news_items.append({
+                    'title': title_cn,
+                    'url': permalink if permalink else url,
+                    'description': description,
+                    'source': 'Reddit ML'
+                })
+    except Exception as e:
+        log(f"Reddit获取错误: {str(e)}")
+    return news_items
+
+def fetch_hacker_news_ai():
+    """获取Hacker News AI相关新闻"""
+    news_items = []
+    try:
+        # 获取Hacker News首页
+        url = "https://hacker-news.firebaseio.com/v0/newstories.json?print=pretty"
+        response = requests.get(url, timeout=30)
+
+        if response.status_code == 200:
+            item_ids = response.json()[:15]  # 获取前15条
+
+            for item_id in item_ids[:8]:
+                try:
+                    item_url = f"https://hacker-news.firebaseio.com/v0/item/{item_id}.json?print=pretty"
+                    item_response = requests.get(item_url, timeout=10)
+
+                    if item_response.status_code == 200:
+                        item_data = item_response.json()
+                        title = item_data.get('title', '')
+                        item_url_link = item_data.get('url', '')
+
+                        # 筛选AI相关的
+                        title_lower = title.lower()
+                        ai_keywords = ['ai', 'artificial intelligence', 'machine learning', 'deep learning',
+                                       'neural', 'gpt', 'llm', 'chatgpt', 'model', 'openai', 'google ai',
+                                       '人工智能', '机器学习', '深度学习']
+
+                        if any(keyword in title_lower for keyword in ai_keywords):
+                            title_cn = translate_to_chinese(title)
+                            url = item_url_link if item_url_link else f"https://news.ycombinator.com/item?id={item_id}"
+
+                            news_items.append({
+                                'title': title_cn,
+                                'url': url,
+                                'description': '',
+                                'source': 'Hacker News'
+                            })
+                except:
+                    continue
+    except Exception as e:
+        log(f"Hacker News获取错误: {str(e)}")
+    return news_items
+
+def fetch_devto_ai():
+    """获取Dev.to AI文章"""
+    news_items = []
+    try:
+        url = "https://dev.to/api/articles?tag=artificialintelligence&top=7"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+
+        response = requests.get(url, headers=headers, timeout=30)
+        if response.status_code == 200:
+            articles = response.json()
+
+            for article in articles[:5]:
+                title = article.get('title', '')
+                url = article.get('url', '')
+                description = article.get('description', '')
+
+                title_cn = translate_to_chinese(title)
+                description_cn = translate_to_chinese(description[:80]) if description else ''
+
+                news_items.append({
+                    'title': title_cn,
+                    'url': url,
+                    'description': description_cn,
+                    'source': 'Dev.to'
+                })
+    except Exception as e:
+        log(f"Dev.to获取错误: {str(e)}")
+    return news_items
+
 def categorize_news(item):
     """对新闻进行分类"""
     title = item.get('title', '').lower()
@@ -485,6 +611,29 @@ def fetch_all_ai_news():
     print("  - Papers with Code...", end='', flush=True)
     all_news['papers'] = fetch_papers_with_code()
     print(f" ✅ {len(all_news['papers'])}篇")
+
+    # 社区媒体
+    print("\n📡 获取社区AI讨论...")
+    print("  - Reddit r/MachineLearning...", end='', flush=True)
+    reddit_items = fetch_reddit_ai()
+    for item in reddit_items:
+        category = categorize_news(item)
+        all_news[category].append(item)
+    print(f" ✅ {len(reddit_items)}条")
+
+    print("  - Hacker News AI...", end='', flush=True)
+    hn_items = fetch_hacker_news_ai()
+    for item in hn_items:
+        category = categorize_news(item)
+        all_news[category].append(item)
+    print(f" ✅ {len(hn_items)}条")
+
+    print("  - Dev.to AI...", end='', flush=True)
+    devto_items = fetch_devto_ai()
+    for item in devto_items:
+        category = categorize_news(item)
+        all_news[category].append(item)
+    print(f" ✅ {len(devto_items)}条")
 
     # 统计
     print(f"\n{'='*60}")
