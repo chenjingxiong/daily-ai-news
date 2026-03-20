@@ -1021,24 +1021,44 @@ def update_archives_index():
             # 读取文件统计各分类数量
             with open(archive, 'r', encoding='utf-8') as f:
                 content = f.read()
-                # 统计各分类的条目数（通过计算项目链接数量）
-                headlines = content.count('## 🔥 今日头条')
-                models = content.count('| 来源 |')
-                funding = content.count('## 💰 融资与投资')
-                products = content.count('## 📦 产品发布')
-                policy = content.count('## 🏛️ 政策与监管')
+
+                # 统计头条新闻（统计 - [标题] 链接格式的数量）
+                headlines = len(re.findall(r'^- \[.*?\]\(https?://.*?\)', content, re.MULTILINE))
+                # 但要减去其他分类的条目，头条新闻是第一个section
+                # 更准确的方法：解析每个section
+
+                # 统计模型发布（查找表格中的行数，排除表头）
+                model_rows = len(re.findall(r'^\| .*? \| \[.*?\]\(https?://.*?\)', content, re.MULTILINE))
+
+                # 统计融资新闻（在融资与投资section中的链接数）
+                funding_count = 0
+                products_count = 0
+                policy_count = 0
+
+                # 分割内容按section
+                sections = content.split('## ')
+                for section in sections:
+                    if '🔥 今日头条' in section or '今日头条' in section:
+                        # 头条section
+                        headlines = min(headlines, 10)  # 限制最多10条
+                    elif '💰 融资与投资' in section:
+                        funding_count = len(re.findall(r'^- \[.*?\]\(https?://.*?\)', section, re.MULTILINE))
+                    elif '📦 产品发布' in section:
+                        products_count = len(re.findall(r'^- \[.*?\]\(https?://.*?\)', section, re.MULTILINE))
+                    elif '🏛️ 政策与监管' in section:
+                        policy_count = len(re.findall(r'^- \[.*?\]\(https?://.*?\)', section, re.MULTILINE))
 
             stats_parts = []
             if headlines > 0:
                 stats_parts.append(f"头条{headlines}条")
-            if models > 0:
-                stats_parts.append(f"模型{models}个")
-            if funding > 0:
-                stats_parts.append(f"融资{funding}条")
-            if products > 0:
-                stats_parts.append(f"产品{products}条")
-            if policy > 0:
-                stats_parts.append(f"政策{policy}条")
+            if model_rows > 0:
+                stats_parts.append(f"模型{model_rows}个")
+            if funding_count > 0:
+                stats_parts.append(f"融资{funding_count}条")
+            if products_count > 0:
+                stats_parts.append(f"产品{products_count}条")
+            if policy_count > 0:
+                stats_parts.append(f"政策{policy_count}条")
 
             stats_str = " | ".join(stats_parts) if stats_parts else ""
             index_content += f"- [{formatted_date}](./{archive.name})"
