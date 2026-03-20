@@ -961,7 +961,7 @@ def update_readme():
 
 ## 📅 最新资讯
 
-**[{datetime.now().strftime('%Y年%m月%d日')}]({TODAY_FILE.name})**
+**[{datetime.now().strftime('%Y年%m月%d日')}](archives/{TODAY_FILE.name})**
 
 ## 📚 历史存档
 
