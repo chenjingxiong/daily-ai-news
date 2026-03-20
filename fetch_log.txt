@@ -18,3 +18,8 @@
 2026-03-20 08:39:33 - 获取HTML错误 https://www.qbitai.com/: HTTPSConnectionPool(host='www.qbitai.com', port=443): Read timed out. (read timeout=30)
 2026-03-20 08:39:36 - 获取HTML错误 https://venturebeat.com/category/ai/: 429 Client Error: Too Many Requests for url: https://venturebeat.com/category/ai/
 2026-03-20 08:39:45 - Papers with Code获取错误: Expecting value: line 1 column 1 (char 0)
+2026-03-20 08:39:47 - === AI资讯获取完成 ===
+2026-03-20 08:42:43 - === 开始获取AI资讯 ===
+2026-03-20 08:42:43 - 获取HTML错误 https://36kr.com/tag/人工智能: 404 Client Error: Not Found for url: https://36kr.com/tag/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD
+2026-03-20 08:42:47 - 获取HTML错误 https://venturebeat.com/category/ai/: 429 Client Error: Too Many Requests for url: https://venturebeat.com/category/ai/
+2026-03-20 08:42:56 - Papers with Code获取错误: Expecting value: line 1 column 1 (char 0)
