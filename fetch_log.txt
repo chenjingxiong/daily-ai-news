@@ -7,3 +7,8 @@
 2026-03-20 00:01:21 - 获取HTML错误 https://36kr.com/tag/人工智能: 404 Client Error: Not Found for url: https://36kr.com/tag/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD
 2026-03-20 00:01:25 - 获取HTML错误 https://venturebeat.com/category/ai/: 429 Client Error: Too Many Requests for url: https://venturebeat.com/category/ai/
 2026-03-20 00:01:40 - Papers with Code获取错误: Expecting value: line 1 column 1 (char 0)
+2026-03-20 00:01:42 - === AI资讯获取完成 ===
+2026-03-20 08:15:57 - === 开始获取AI资讯 ===
+2026-03-20 08:15:57 - 获取HTML错误 https://36kr.com/tag/人工智能: 404 Client Error: Not Found for url: https://36kr.com/tag/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD
+2026-03-20 08:16:04 - 获取HTML错误 https://venturebeat.com/category/ai/: 429 Client Error: Too Many Requests for url: https://venturebeat.com/category/ai/
+2026-03-20 08:16:13 - Papers with Code获取错误: Expecting value: line 1 column 1 (char 0)

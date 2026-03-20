@@ -238,9 +238,9 @@ def fetch_techcrunch_ai():
             description = entry.get('description', entry.get('summary', ''))
             url = entry.get('link', '')
 
-            # 清理HTML
+            # 清理HTML，限制100字
             description = re.sub(r'<[^>]+>', '', description)
-            description = description[:200] + '...' if len(description) > 200 else description
+            description = description[:100] + '...' if len(description) > 100 else description
 
             # 翻译
             title_cn = translate_to_chinese(title)
@@ -268,7 +268,7 @@ def fetch_verge_ai():
             url = entry.get('link', '')
 
             description = re.sub(r'<[^>]+>', '', description)
-            description = description[:200] + '...' if len(description) > 200 else description
+            description = description[:100] + '...' if len(description) > 100 else description
 
             title_cn = translate_to_chinese(title)
             description_cn = translate_to_chinese(description)
@@ -502,15 +502,19 @@ def fetch_all_ai_news():
     return generate_content(all_news)
 
 def format_news_item(item):
-    """格式化新闻条目"""
+    """格式化新闻条目 - 摘要限制100字以内"""
     title = item.get('title', '')
     url = item.get('url', '')
     desc = item.get('description', '')
     source = item.get('source', '资讯')
 
+    # 限制摘要在100字以内
+    if desc and len(desc) > 100:
+        desc = desc[:97] + '...'
+
     if url:
         if desc:
-            return f"- [{title}]({url})\n  > {desc}… — *{source}*"
+            return f"- [{title}]({url})\n  > {desc} — *{source}*"
         else:
             return f"- [{title}]({url}) — *{source}*"
     else:
