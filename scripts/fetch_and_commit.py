@@ -1081,9 +1081,9 @@ def update_archives_index():
 *本文件由 [daily-ai-news](https://github.com/chenjingxiong/daily-ai-news) 自动生成*
 """
 
-    with open(ARCHIVES_DIR / "index.md", 'w', encoding='utf-8') as f:
+    with open(ARCHIVES_DIR / "README.md", 'w', encoding='utf-8') as f:
         f.write(index_content)
-    print(f"✅ 归档索引已更新：{ARCHIVES_DIR / 'index.md'}")
+    print(f"✅ 归档索引已更新：{ARCHIVES_DIR / 'README.md'}")
 
 def commit_to_github():
     """提交更改到GitHub"""
