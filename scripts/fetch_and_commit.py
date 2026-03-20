@@ -126,18 +126,187 @@ def parse_html_content(html, selectors):
 
 # ==================== 数据源 ====================
 
+# 中文AI媒体数据源 - 按重要性排序
+CHINESE_AI_SOURCES = [
+    # 第一优先级：专业AI媒体
+    {
+        'name': '新智元',
+        'url': 'https://www.jiqizhixin.com',
+        'priority': 1,
+        'type': 'rss'
+    },
+    {
+        'name': '量子位',
+        'url': 'https://www.qbitai.com',
+        'priority': 1,
+        'type': 'rss'
+    },
+    {
+        'name': '机器之心',
+        'url': 'https://www.jiqizhixin.com',
+        'priority': 1,
+        'type': 'html'
+    },
+    {
+        'name': 'AI科技评论',
+        'url': 'https://www.aitechtalk.com',
+        'priority': 2,
+        'type': 'html'
+    },
+
+    # 第二优先级：科技媒体AI版块
+    {
+        'name': '雷锋网AI',
+        'url': 'https://www.leiphone.com',
+        'priority': 2,
+        'type': 'html'
+    },
+    {
+        'name': '智东西',
+        'url': 'https://www.zhidx.com',
+        'priority': 2,
+        'type': 'html'
+    },
+    {
+        'name': '钛媒体AI',
+        'url': 'https://www.tmtpost.com/tag/AI',
+        'priority': 2,
+        'type': 'html'
+    },
+    {
+        'name': '36氪AI',
+        'url': 'https://36kr.com/tag/人工智能',
+        'priority': 2,
+        'type': 'html'
+    },
+    {
+        'name': '虎嗅AI',
+        'url': 'https://www.huxiu.com/tag/AI',
+        'priority': 2,
+        'type': 'html'
+    },
+
+    # 第三优先级：技术社区
+    {
+        'name': 'InfoQ中文',
+        'url': 'https://www.infoq.cn/topic/AI',
+        'priority': 3,
+        'type': 'html'
+    },
+    {
+        'name': 'CSDN AI',
+        'url': 'https://www.csdn.net/tag/AI',
+        'priority': 3,
+        'type': 'html'
+    },
+    {
+        'name': '51CTO AI',
+        'url': 'https://www.51cto.com/tag/AI',
+        'priority': 3,
+        'type': 'html'
+    },
+    {
+        'name': 'OSC AI开源',
+        'url': 'https://www.oschina.net/tag/AI',
+        'priority': 3,
+        'type': 'html'
+    },
+]
+
+def fetch_chinese_ai_news():
+    """获取中文AI资讯 - 增强版"""
+    all_news = []
+
+    # 尝试使用RSS获取新智元和量子位
+    rss_sources = [
+        ("https://www.jiqizhixin.com/rss", "新智元"),
+        ("https://www.qbitai.com/feed", "量子位"),
+    ]
+
+    for rss_url, source_name in rss_sources:
+        try:
+            print(f"  📡 {source_name} RSS...", end='', flush=True)
+            feed = parse(rss_url)
+            items_count = 0
+            for entry in feed.entries[:6]:
+                title = entry.get('title', '')
+                url = entry.get('link', '')
+                description = entry.get('description', entry.get('summary', ''))
+
+                # 清理描述
+                if description:
+                    description = re.sub(r'<[^>]+>', '', description)
+                    description = description[:80] + '...' if len(description) > 80 else description
+
+                if title and url:
+                    all_news.append({
+                        'title': title,
+                        'url': url,
+                        'description': description,
+                        'source': source_name
+                    })
+                    items_count += 1
+            print(f" ✅ {items_count}条")
+        except Exception as e:
+            print(f" ⚠️")
+            log(f"{source_name} RSS获取错误: {str(e)}")
+
+    # 使用HTML解析获取其他中文媒体
+    html_sources = [
+        ('雷锋网', 'https://www.leiphone.com', 'leiphone-article-title a, .article-title a, h2 a'),
+        ('智东西', 'https://www.zhidx.com', 'h2 a, .article-title a, .post-title a'),
+        ('钛媒体', 'https://www.tmtpost.com/tag/AI', 'h2 a, .article-title a, .post-title a'),
+        ('虎嗅', 'https://www.huxiu.com/tag/AI', 'h2 a, .article-title a'),
+        ('InfoQ', 'https://www.infoq.cn/topic/AI', 'h2 a, .article-title a'),
+        ('CSDN', 'https://www.csdn.net/tag/AI', 'h2 a, .article-title a'),
+    ]
+
+    for source_name, url, selector in html_sources[:4]:  # 限制数量避免超时
+        try:
+            print(f"  📡 {source_name}...", end='', flush=True)
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            response = requests.get(url, headers=headers, timeout=15)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, 'lxml')
+                articles = soup.select(selector)
+                items_count = 0
+                for article in articles[:5]:
+                    title = article.get_text(strip=True)
+                    link = article.get('href', '')
+                    if link and not link.startswith('http'):
+                        if link.startswith('/'):
+                            link = url.rstrip('/') + link
+                        else:
+                            link = url + '/' + link
+                    if title and len(title) > 8 and link:
+                        all_news.append({
+                            'title': title,
+                            'url': link,
+                            'description': '',
+                            'source': source_name
+                        })
+                        items_count += 1
+                print(f" ✅ {items_count}条")
+            else:
+                print(f" ⚠️ HTTP {response.status_code}")
+        except Exception as e:
+            print(f" ⚠️")
+            log(f"{source_name}获取错误: {str(e)}")
+
+    return all_news
+
 def fetch_36kr_ai_news():
     """获取36氪AI资讯"""
     news_items = []
     try:
-        # 36氪AI标签页
         url = "https://36kr.com/tag/人工智能"
         html = fetch_html(url)
         if html:
             soup = BeautifulSoup(html, 'lxml')
-            # 查找文章标题
             articles = soup.select('.article-item-title a, .kr-article-title a, h2 a, h3 a')
-            for article in articles[:8]:
+            for article in articles[:6]:
                 title = article.get_text(strip=True)
                 link = article.get('href', '')
                 if link and not link.startswith('http'):
@@ -162,7 +331,7 @@ def fetch_jiqizhixin_news():
         if html:
             soup = BeautifulSoup(html, 'lxml')
             articles = soup.select('h2 a, h3 a, .article-title a, .post-title a')
-            for article in articles[:8]:
+            for article in articles[:6]:
                 title = article.get_text(strip=True)
                 link = article.get('href', '')
                 if link and not link.startswith('http'):
@@ -557,25 +726,13 @@ def fetch_all_ai_news():
         'papers': []
     }
 
-    # 中文媒体
-    print("📡 获取中文AI媒体...")
-    sources = [
-        ("36氪", fetch_36kr_ai_news),
-        ("机器之心", fetch_jiqizhixin_news),
-        ("量子位", fetch_quantbit_news),
-    ]
-
-    for source_name, fetch_func in sources:
-        try:
-            print(f"  - {source_name}...", end='', flush=True)
-            items = fetch_func()
-            for item in items:
-                category = categorize_news(item)
-                all_news[category].append(item)
-            print(f" ✅ {len(items)}条")
-        except Exception as e:
-            print(f" ❌")
-            log(f"{source_name}错误: {str(e)}")
+    # 中文媒体 - 使用增强版获取函数
+    print("📡 获取中文AI媒体（按重要性排序）...")
+    cn_items = fetch_chinese_ai_news()
+    for item in cn_items:
+        category = categorize_news(item)
+        all_news[category].append(item)
+    print(f"  ✅ 中文媒体共获取 {len(cn_items)} 条\n")
 
     # 英文媒体（带翻译）
     print("\n📡 获取英文AI媒体（含翻译）...")
