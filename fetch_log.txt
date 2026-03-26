@@ -77,3 +77,8 @@
 2026-03-26 07:00:01 - === 开始获取AI资讯 ===
 2026-03-26 07:00:14 - 获取HTML错误 https://venturebeat.com/category/ai/: 429 Client Error: Too Many Requests for url: https://venturebeat.com/category/ai/
 2026-03-26 07:01:02 - Papers with Code获取错误: Expecting value: line 1 column 1 (char 0)
+2026-03-26 07:01:14 - === AI资讯获取完成 ===
+2026-03-27 07:00:01 - === 开始获取AI资讯 ===
+2026-03-27 07:00:18 - 雷锋网获取错误: HTTPSConnectionPool(host='www.leiphone.com', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.leiphone.com', port=443) at 0x7f796280ef90>, 'Connection to www.leiphone.com timed out. (connect timeout=15)'))
+2026-03-27 07:00:32 - 获取HTML错误 https://venturebeat.com/category/ai/: 429 Client Error: Too Many Requests for url: https://venturebeat.com/category/ai/
+2026-03-27 07:01:10 - Papers with Code获取错误: Expecting value: line 1 column 1 (char 0)
