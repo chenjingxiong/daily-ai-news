@@ -192,3 +192,7 @@
 2026-04-23 07:00:01 - === 开始获取AI资讯 ===
 2026-04-23 07:00:12 - 获取HTML错误 https://venturebeat.com/category/ai/: 429 Client Error: Too Many Requests for url: https://venturebeat.com/category/ai/
 2026-04-23 07:00:44 - Papers with Code获取错误: Expecting value: line 1 column 1 (char 0)
+2026-04-23 07:00:54 - === AI资讯获取完成 ===
+2026-04-24 07:00:02 - === 开始获取AI资讯 ===
+2026-04-24 07:00:21 - 获取HTML错误 https://venturebeat.com/category/ai/: 429 Client Error: Too Many Requests for url: https://venturebeat.com/category/ai/
+2026-04-24 07:01:14 - Papers with Code获取错误: Expecting value: line 1 column 1 (char 0)
